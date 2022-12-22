@@ -104,7 +104,7 @@ fn main() -> Result<()> {
         let output = construct_output(c, j)?;
         println!("{}", output);
     } else {
-        return Err(anyhow!("Could not convert response to JSON."))
+        return Err(anyhow!("Could not convert response to JSON."));
     }
 
     Ok(())
