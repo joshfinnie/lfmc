@@ -62,7 +62,7 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
         "7day" => " week",
         "1month" => " month",
         "3month" => " 3 months",
-        "6month" => r#" 6 months"#,
+        "6month" => " 6 months",
         "12month" => " year",
         _ => return Err(anyhow!("Period {} not allowed. Only allow \"overall\", \"7day\", \"1month\", \"3month\", \"6month\", or \"12month\".", config.period))
     };
