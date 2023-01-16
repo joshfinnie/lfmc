@@ -1,26 +1,26 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use dotenv::dotenv;
 use reqwest;
 use serde_json::Value;
 
-/// An application to view your latest artists from Last.fm
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Your Last.fm API Key
-    #[arg(short = 'k', long)]
+    #[arg(short = 'k', long, env = "API_KEY")]
     api_key: String,
 
     /// Your Last.fm Username
-    #[arg(short, long)]
+    #[arg(short, long, env = "USERNAME")]
     username: String,
 
     /// The limit of Artists
-    #[arg(short, long)]
+    #[arg(short, long, default_value = "5", env = "LIMIT")]
     limit: u16,
 
     /// The lookback period
-    #[arg(short, long, default_value = "7day")]
+    #[arg(short, long, default_value = "7day", env = "PERIOD")]
     period: String,
 }
 
@@ -33,13 +33,13 @@ struct Config {
 }
 
 impl Config {
-    fn new(api_key: String, username: String, limit: u16, period: String) -> Self {
-        Config {
+    fn new(api_key: String, username: String, limit: u16, period: String) -> Result<Self> {
+        Ok(Config {
             api_key,
             username,
             limit,
             period,
-        }
+        })
     }
 
     fn get_uri(&self) -> String {
@@ -67,13 +67,17 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
         _ => return Err(anyhow!("Period {} not allowed. Only allow \"overall\", \"7day\", \"1month\", \"3month\", \"6month\", or \"12month\".", config.period))
     };
 
-    let mut f = format!(
+    let mut output: String = format!(
         "♫ My Top {} played artists in the past{}:",
         config.limit.to_string(),
         period
     );
 
-    let artists = json["topartists"]["artist"].as_array().unwrap();
+    let artists = match json["topartists"]["artist"].as_array() {
+        Some(a) => a,
+        None => return Err(anyhow!("Error parsing json.")),
+    };
+
     for (i, artist) in artists.iter().enumerate() {
         let ending = match i {
             x if x <= (config.limit as usize - 3) => ",",
@@ -81,22 +85,27 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
             _ => "",
         };
 
-        f = format!(
-            " {} {} ({}){}",
-            f,
-            artist["name"].as_str().unwrap(),
-            artist["playcount"].as_str().unwrap(),
-            ending
-        );
+        let name = match artist["name"].as_str() {
+            Some(n) => n,
+            None => return Err(anyhow!("Artist not found.")),
+        };
+
+        let playcount = match artist["playcount"].as_str() {
+            Some(p) => p,
+            None => return Err(anyhow!("Playcount not found.")),
+        };
+
+        output = format!(" {} {} ({}){}", output, name, playcount, ending);
     }
-    f = format!("{}. Via #LastFM ♫", f);
-    Ok(f.to_string())
+
+    Ok(format!("{}. Via #LastFM ♫", output))
 }
 
 fn main() -> Result<()> {
+    dotenv().ok();
     let args = Args::parse();
 
-    let c = Config::new(args.api_key, args.username, args.limit, args.period);
+    let c = Config::new(args.api_key, args.username, args.limit, args.period)?;
 
     let r: Result<_, reqwest::Error> = reqwest::blocking::get(c.get_uri())?.json::<Value>();
 
