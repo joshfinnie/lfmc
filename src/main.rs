@@ -67,13 +67,17 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
         _ => return Err(anyhow!("Period {} not allowed. Only allow \"overall\", \"7day\", \"1month\", \"3month\", \"6month\", or \"12month\".", config.period))
     };
 
-    let mut f: String = format!(
+    let mut output: String = format!(
         "♫ My Top {} played artists in the past{}:",
         config.limit.to_string(),
         period
     );
 
-    let artists = json["topartists"]["artist"].as_array().unwrap();
+    let artists = match json["topartists"]["artist"].as_array() {
+        Some(a) => a,
+        None => return Err(anyhow!("Error parsing json.")),
+    };
+
     for (i, artist) in artists.iter().enumerate() {
         let ending = match i {
             x if x <= (config.limit as usize - 3) => ",",
@@ -81,18 +85,20 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
             _ => "",
         };
 
-        let artist = Ok(&artist["artist"].as_str())?;
+        let name = match artist["name"].as_str() {
+            Some(n) => n,
+            None => return Err(anyhow!("Artist not found.")),
+        };
 
-        f = format!(
-            " {} {} ({}){}",
-            f,
-            artist,
-            artist["playcount"].as_str().unwrap(),
-            ending
-        );
+        let playcount = match artist["playcount"].as_str() {
+            Some(p) => p,
+            None => return Err(anyhow!("Playcount not found.")),
+        };
+
+        output = format!(" {} {} ({}){}", output, name, playcount, ending);
     }
-    f = format!("{}. Via #LastFM ♫", f);
-    Ok(f.to_string())
+
+    Ok(format!("{}. Via #LastFM ♫", output))
 }
 
 fn main() -> Result<()> {
