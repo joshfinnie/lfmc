@@ -1,10 +1,10 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
-use dotenv::dotenv;
+use dotenv;
 use reqwest;
 use serde_json::Value;
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Your Last.fm API Key
@@ -24,7 +24,6 @@ struct Args {
     period: String,
 }
 
-#[derive(Debug)]
 struct Config {
     api_key: String,
     username: String,
@@ -102,16 +101,16 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
 }
 
 fn main() -> Result<()> {
-    dotenv().ok();
+    if let Some(home_dir) = dirs::home_dir() {
+        dotenv::from_filename(format!("{}/.config/lfmc/.env", home_dir.to_string_lossy())).ok();
+    }
     let args = Args::parse();
-
     let c = Config::new(args.api_key, args.username, args.limit, args.period)?;
-
     let r: Result<_, reqwest::Error> = reqwest::blocking::get(c.get_uri())?.json::<Value>();
 
     if let Ok(j) = r {
         let output = construct_output(c, j)?;
-        println!("{}", output);
+        println!("\n{}\n", output);
     } else {
         return Err(anyhow!("Could not convert response to JSON."));
     }
