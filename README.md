@@ -7,7 +7,7 @@ A command-line application to view your latest artists from Last.fm
 $ lfmc --api-key <LAST.FM API KEY> --username <LAST.FM USERNAME> --period 7days --limit 5
 ```
 
-The API key, Username, Period, and Limit can be passed via `.env` file.
+The API key, Username, Period, and Limit can be passed via `.env` file which is stored in the `$HOME/.config/lfmc/` folder.
 
 ## Develop
 
