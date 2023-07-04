@@ -1,30 +1,29 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use dotenv;
 use reqwest;
 use serde_json::Value;
 
-/// An application to view your latest artists from Last.fm
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Your Last.fm API Key
-    #[arg(short = 'k', long)]
+    #[arg(short = 'k', long, env = "API_KEY")]
     api_key: String,
 
     /// Your Last.fm Username
-    #[arg(short, long)]
+    #[arg(short, long, env = "USERNAME")]
     username: String,
 
     /// The limit of Artists
-    #[arg(short, long)]
+    #[arg(short, long, default_value = "5", env = "LIMIT")]
     limit: u16,
 
     /// The lookback period
-    #[arg(short, long, default_value = "7day")]
+    #[arg(short, long, default_value = "7day", env = "PERIOD")]
     period: String,
 }
 
-#[derive(Debug)]
 struct Config {
     api_key: String,
     username: String,
@@ -67,13 +66,16 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
         _ => return Err(anyhow!("Period {} not allowed. Only allow \"overall\", \"7day\", \"1month\", \"3month\", \"6month\", or \"12month\".", config.period))
     };
 
-    let mut f = format!(
+    let mut output: String = format!(
         "♫ My Top {} played artists in the past{}:",
         config.limit.to_string(),
         period
     );
 
-    let artists = json["topartists"]["artist"].as_array().unwrap();
+    let artists = json["topartists"]["artist"]
+        .as_array()
+        .ok_or(anyhow!("Error parsing JSON."))?;
+
     for (i, artist) in artists.iter().enumerate() {
         let ending = match i {
             x if x <= (config.limit as usize - 3) => ",",
@@ -81,28 +83,30 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
             _ => "",
         };
 
-        f = format!(
-            " {} {} ({}){}",
-            f,
-            artist["name"].as_str().unwrap(),
-            artist["playcount"].as_str().unwrap(),
-            ending
-        );
+        let name = artist["name"]
+            .as_str()
+            .ok_or(anyhow!("Artist not found."))?;
+        let playcount = artist["playcount"]
+            .as_str()
+            .ok_or(anyhow!("Playcount not found."))?;
+
+        output = format!(" {} {} ({}){}", output, name, playcount, ending);
     }
-    f = format!("{}. Via #LastFM ♫", f);
-    Ok(f.to_string())
+
+    Ok(format!("{}. Via #LastFM ♫", output))
 }
 
 fn main() -> Result<()> {
+    if let Some(home_dir) = dirs::home_dir() {
+        dotenv::from_filename(format!("{}/.config/lfmc/.env", home_dir.to_string_lossy())).ok();
+    }
     let args = Args::parse();
+    let config = Config::new(args.api_key, args.username, args.limit, args.period);
+    let resp: Result<_, reqwest::Error> = reqwest::blocking::get(config.get_uri())?.json::<Value>();
 
-    let c = Config::new(args.api_key, args.username, args.limit, args.period);
-
-    let r: Result<_, reqwest::Error> = reqwest::blocking::get(c.get_uri())?.json::<Value>();
-
-    if let Ok(j) = r {
-        let output = construct_output(c, j)?;
-        println!("{}", output);
+    if let Ok(json) = resp {
+        let output = construct_output(config, json)?;
+        println!("\n{}\n", output);
     } else {
         return Err(anyhow!("Could not convert response to JSON."));
     }
