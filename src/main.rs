@@ -32,13 +32,13 @@ struct Config {
 }
 
 impl Config {
-    fn new(api_key: String, username: String, limit: u16, period: String) -> Result<Self> {
-        Ok(Config {
+    fn new(api_key: String, username: String, limit: u16, period: String) -> Self {
+        Config {
             api_key,
             username,
             limit,
             period,
-        })
+        }
     }
 
     fn get_uri(&self) -> String {
@@ -72,10 +72,9 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
         period
     );
 
-    let artists = match json["topartists"]["artist"].as_array() {
-        Some(a) => a,
-        None => return Err(anyhow!("Error parsing json.")),
-    };
+    let artists = json["topartists"]["artist"]
+        .as_array()
+        .ok_or(anyhow!("Error parsing JSON."))?;
 
     for (i, artist) in artists.iter().enumerate() {
         let ending = match i {
@@ -84,15 +83,12 @@ fn construct_output(config: Config, json: Value) -> Result<String> {
             _ => "",
         };
 
-        let name = match artist["name"].as_str() {
-            Some(n) => n,
-            None => return Err(anyhow!("Artist not found.")),
-        };
-
-        let playcount = match artist["playcount"].as_str() {
-            Some(p) => p,
-            None => return Err(anyhow!("Playcount not found.")),
-        };
+        let name = artist["name"]
+            .as_str()
+            .ok_or(anyhow!("Artist not found."))?;
+        let playcount = artist["playcount"]
+            .as_str()
+            .ok_or(anyhow!("Playcount not found."))?;
 
         output = format!(" {} {} ({}){}", output, name, playcount, ending);
     }
@@ -105,11 +101,11 @@ fn main() -> Result<()> {
         dotenv::from_filename(format!("{}/.config/lfmc/.env", home_dir.to_string_lossy())).ok();
     }
     let args = Args::parse();
-    let c = Config::new(args.api_key, args.username, args.limit, args.period)?;
-    let r: Result<_, reqwest::Error> = reqwest::blocking::get(c.get_uri())?.json::<Value>();
+    let config = Config::new(args.api_key, args.username, args.limit, args.period);
+    let resp: Result<_, reqwest::Error> = reqwest::blocking::get(config.get_uri())?.json::<Value>();
 
-    if let Ok(j) = r {
-        let output = construct_output(c, j)?;
+    if let Ok(json) = resp {
+        let output = construct_output(config, json)?;
         println!("\n{}\n", output);
     } else {
         return Err(anyhow!("Could not convert response to JSON."));
