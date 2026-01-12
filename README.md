@@ -1,16 +1,181 @@
 # lfmc
-A command-line application to view your latest artists from Last.fm
 
-## Use
+A command-line application to view your latest artists from Last.fm, written in Rust.
 
-``` sh
-$ lfmc --api-key <LAST.FM API KEY> --username <LAST.FM USERNAME> --period 7days --limit 5
+## Features
+
+- 🎵 Fetch your top artists from Last.fm
+- 📊 Multiple output formats: Social media text (default), JSON, and CSV
+- ⚡ Async HTTP with automatic retry logic
+- 🔒 Secure HTTPS API calls
+- 📝 Structured logging with adjustable verbosity
+- ⚙️ Configuration via environment file or CLI arguments
+- ✅ Comprehensive test coverage
+
+## Installation
+
+### Build from Source
+
+```sh
+cargo build --release
 ```
 
-The API key, Username, Period, and Limit can be passed via `.env` file which is stored in the `$HOME/.config/lfmc/` folder.
+The executable will be located at `target/release/lfmc`.
 
-## Develop
+### Prerequisites
 
-LFMC uses Rust.
-We're currently using Rust 1.66.1.
-Run `cargo build --release` to get executible.
+- Rust 1.66.1 or later
+- A Last.fm API key (get one at https://www.last.fm/api)
+
+## Usage
+
+### Basic Usage
+
+```sh
+lfmc --api-key <YOUR_API_KEY> --username <YOUR_USERNAME>
+```
+
+### With All Options
+
+```sh
+lfmc \
+  --api-key <API_KEY> \
+  --username <USERNAME> \
+  --period 7day \
+  --limit 5 \
+  --format social
+```
+
+### Output Formats
+
+#### Social (Default)
+Perfect for sharing on social media:
+```sh
+lfmc -k <API_KEY> -u <USERNAME> --format social
+```
+Output:
+```
+♫ My Top 5 played artists in the past week: Artist 1 (100), Artist 2 (90), Artist 3 (80), Artist 4 (70), & Artist 5 (60). Via #LastFM ♫
+```
+
+#### JSON
+For programmatic processing:
+```sh
+lfmc -k <API_KEY> -u <USERNAME> --format json
+```
+
+#### CSV
+For spreadsheet analysis:
+```sh
+lfmc -k <API_KEY> -u <USERNAME> --format csv
+```
+
+### Configuration File
+
+Create a `.env` file at `$HOME/.config/lfmc/.env`:
+
+```sh
+API_KEY=your_lastfm_api_key
+USERNAME=your_lastfm_username
+PERIOD=7day
+LIMIT=5
+```
+
+You can use the provided `.env.sample` as a template:
+
+```sh
+mkdir -p ~/.config/lfmc
+cp .env.sample ~/.config/lfmc/.env
+# Edit the file with your credentials
+```
+
+Then run without arguments:
+```sh
+lfmc
+```
+
+## Options
+
+| Option | Short | Environment Variable | Default | Description |
+|--------|-------|---------------------|---------|-------------|
+| `--api-key` | `-k` | `API_KEY` | Required | Your Last.fm API key |
+| `--username` | `-u` | `USERNAME` | Required | Your Last.fm username |
+| `--limit` | `-l` | `LIMIT` | 5 | Number of artists to fetch (1-50) |
+| `--period` | `-p` | `PERIOD` | 7day | Time period (see below) |
+| `--format` | `-f` | - | social | Output format (social, json, csv) |
+| `--verbose` | `-v` | - | - | Increase logging verbosity (-v, -vv, -vvv) |
+
+### Valid Periods
+
+- `overall` - All time
+- `7day` - Last 7 days
+- `1month` - Last month
+- `3month` - Last 3 months
+- `6month` - Last 6 months
+- `12month` - Last 12 months
+
+## Examples
+
+### Most played artists this week (default)
+```sh
+lfmc -k YOUR_KEY -u YOUR_USERNAME
+```
+
+### Top 10 artists of all time as JSON
+```sh
+lfmc -k YOUR_KEY -u YOUR_USERNAME --period overall --limit 10 --format json
+```
+
+### Last month's artists with debug logging
+```sh
+lfmc -k YOUR_KEY -u YOUR_USERNAME --period 1month -vv
+```
+
+### Export to CSV for analysis
+```sh
+lfmc -k YOUR_KEY -u YOUR_USERNAME --format csv > my_artists.csv
+```
+
+## Development
+
+### Building
+
+```sh
+cargo build
+```
+
+### Running Tests
+
+```sh
+cargo test
+```
+
+### Linting
+
+```sh
+cargo clippy
+```
+
+### Formatting
+
+```sh
+cargo fmt
+```
+
+## Architecture
+
+LFMC follows a modular architecture:
+
+- **API Client**: Async HTTP client with retry logic and exponential backoff
+- **Configuration**: Type-safe config with validation
+- **Formatters**: Pluggable output formatters (social, JSON, CSV)
+- **Error Handling**: Custom error types with helpful messages
+- **Testing**: Unit, integration, and CLI end-to-end tests
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
