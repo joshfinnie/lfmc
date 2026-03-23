@@ -74,6 +74,38 @@ fn test_invalid_format() {
 }
 
 #[test]
+fn test_post_bluesky_without_handle() {
+    let mut cmd = Command::cargo_bin("lfmc").unwrap();
+    cmd.env_clear();
+    cmd.arg("--api-key")
+        .arg("testkey")
+        .arg("--username")
+        .arg("testuser")
+        .arg("--post-bluesky");
+
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("--bluesky-handle"));
+}
+
+#[test]
+fn test_post_bluesky_without_password() {
+    let mut cmd = Command::cargo_bin("lfmc").unwrap();
+    cmd.env_clear();
+    cmd.arg("--api-key")
+        .arg("testkey")
+        .arg("--username")
+        .arg("testuser")
+        .arg("--post-bluesky")
+        .arg("--bluesky-handle")
+        .arg("user.bsky.social");
+
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("--bluesky-app-password"));
+}
+
+#[test]
 fn test_version_flag() {
     let mut cmd = Command::cargo_bin("lfmc").unwrap();
     cmd.arg("--version");

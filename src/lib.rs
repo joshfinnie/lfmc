@@ -1,4 +1,5 @@
 pub mod api;
+pub mod bluesky;
 pub mod cli;
 pub mod config;
 pub mod error;

@@ -33,6 +33,9 @@ impl LastFmClient {
     pub async fn get_top_artists(&self, config: &Config) -> Result<ApiResponse> {
         let encoded_username = urlencoding::encode(&config.username);
 
+        // Note: api_key is included as a query parameter per the Last.fm API spec.
+        // Avoid enabling reqwest debug logging (RUST_LOG=reqwest=debug) in production
+        // as it will log the full URL including the key.
         let url = format!(
             "{}?method={}&user={}&api_key={}&format=json&period={}&limit={}",
             BASE_URL,
@@ -105,6 +108,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires network access"]
     async fn test_client_with_invalid_key() {
         let client = LastFmClient::new();
         let config = Config::builder()
@@ -117,6 +121,5 @@ mod tests {
 
         let result = client.get_top_artists(&config).await;
         assert!(result.is_err());
-        // This will fail with an API error, which is expected
     }
 }

@@ -14,6 +14,9 @@ pub struct Config {
 
 impl Config {
     pub fn new(api_key: String, username: String, limit: u16, period: Period) -> Result<Self> {
+        let api_key = api_key.trim().to_string();
+        let username = username.trim().to_string();
+
         if api_key.is_empty() {
             return Err(Error::config_error(
                 "API key cannot be empty. Set via --api-key or API_KEY env var",
@@ -143,6 +146,20 @@ mod tests {
         assert_eq!(config.api_key, "test_key");
         assert_eq!(config.username, "test_user");
         assert_eq!(config.limit, 10);
+    }
+
+    #[test]
+    fn test_whitespace_api_key() {
+        let config = Config::new("   ".to_string(), "test_user".to_string(), 5, Period::SevenDay);
+        assert!(config.is_err());
+        assert!(format!("{}", config.unwrap_err()).contains("API key cannot be empty"));
+    }
+
+    #[test]
+    fn test_whitespace_username() {
+        let config = Config::new("test_key".to_string(), "\t\n".to_string(), 5, Period::SevenDay);
+        assert!(config.is_err());
+        assert!(format!("{}", config.unwrap_err()).contains("Username cannot be empty"));
     }
 
     #[test]

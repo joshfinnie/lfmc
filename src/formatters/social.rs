@@ -9,12 +9,12 @@ impl Formatter for SocialFormatter {
     fn format(&self, artists: &TopArtists, config: &Config) -> Result<String> {
         let period = config.period.display_suffix();
 
+        let artist_list = &artists.artists;
         let mut output = format!(
             "♫ My Top {} played artists in the past{}:",
-            config.limit, period
+            artist_list.len(),
+            period
         );
-
-        let artist_list = &artists.artists;
         for (i, artist) in artist_list.iter().enumerate() {
             let ending = if artist_list.len() < 2 {
                 ""
@@ -120,6 +120,83 @@ mod tests {
         // With only 2 artists, first should have no ending, second should have "&" before it
         assert!(result.contains("First (100), &"));
         assert!(result.contains("Second (50)"));
+    }
+
+    #[test]
+    fn test_social_format_single_artist() {
+        let artists = TopArtists {
+            artists: vec![Artist {
+                name: "Only Artist".to_string(),
+                playcount: "500".to_string(),
+            }],
+        };
+
+        let config = Config::builder()
+            .api_key("test_key")
+            .username("test_user")
+            .limit(1)
+            .period(Period::SevenDay)
+            .build()
+            .unwrap();
+
+        let formatter = SocialFormatter;
+        let result = formatter.format(&artists, &config).unwrap();
+
+        assert!(result.contains("My Top 1 played artists"));
+        assert!(result.contains("Only Artist (500)"));
+        assert!(!result.contains(","));
+        assert!(!result.contains("&"));
+    }
+
+    #[test]
+    fn test_social_count_uses_actual_artist_count() {
+        // Regression test: count in header should reflect actual artists returned,
+        // not config.limit (they can differ if the API returns fewer than requested).
+        let artists = TopArtists {
+            artists: vec![
+                Artist {
+                    name: "Artist 1".to_string(),
+                    playcount: "100".to_string(),
+                },
+                Artist {
+                    name: "Artist 2".to_string(),
+                    playcount: "50".to_string(),
+                },
+            ],
+        };
+
+        let config = Config::builder()
+            .api_key("test_key")
+            .username("test_user")
+            .limit(10) // requested 10, but only 2 returned
+            .period(Period::SevenDay)
+            .build()
+            .unwrap();
+
+        let formatter = SocialFormatter;
+        let result = formatter.format(&artists, &config).unwrap();
+
+        assert!(result.contains("My Top 2 played artists"), "expected '2', got: {}", result);
+        assert!(!result.contains("My Top 10"));
+    }
+
+    #[test]
+    fn test_social_format_empty_artists() {
+        let artists = TopArtists { artists: vec![] };
+
+        let config = Config::builder()
+            .api_key("test_key")
+            .username("test_user")
+            .limit(5)
+            .period(Period::SevenDay)
+            .build()
+            .unwrap();
+
+        let formatter = SocialFormatter;
+        let result = formatter.format(&artists, &config).unwrap();
+
+        assert!(result.contains("My Top 0 played artists"));
+        assert!(result.contains("Via #LastFM ♫"));
     }
 
     #[test]

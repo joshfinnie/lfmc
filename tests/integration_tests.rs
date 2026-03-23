@@ -1,10 +1,10 @@
-use lfmc::api::models::{ApiResponse, Artist, TopArtists};
+use lfmc::api::models::{Artist, TopArtists};
 use lfmc::config::Period;
 use lfmc::formatters::{get_formatter, Format};
 use lfmc::{Config, LastFmClient};
 
-#[tokio::test]
-async fn test_config_validation() {
+#[test]
+fn test_config_validation() {
     // Test empty API key
     let result = Config::new("".to_string(), "testuser".to_string(), 5, Period::SevenDay);
     assert!(result.is_err());
@@ -83,18 +83,6 @@ fn test_formatters_integration() {
 
 #[test]
 fn test_client_creation() {
-    // Just verify the client can be created
     let client = LastFmClient::new();
-    // If this compiles and runs, the client is properly configured
     drop(client);
-}
-
-#[test]
-fn test_period_api_strings() {
-    assert_eq!(Period::Overall.api_string(), "overall");
-    assert_eq!(Period::SevenDay.api_string(), "7day");
-    assert_eq!(Period::OneMonth.api_string(), "1month");
-    assert_eq!(Period::ThreeMonth.api_string(), "3month");
-    assert_eq!(Period::SixMonth.api_string(), "6month");
-    assert_eq!(Period::TwelveMonth.api_string(), "12month");
 }

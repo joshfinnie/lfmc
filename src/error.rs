@@ -16,19 +16,14 @@ pub enum Error {
     #[error("Configuration error: {0}")]
     ConfigError(String),
 
-    #[error(
-        "Invalid period: {0}. Valid periods are: overall, 7day, 1month, 3month, 6month, 12month"
-    )]
-    InvalidPeriod(String),
-
     #[error("Formatting error: {0}")]
     FormatError(String),
 
+    #[error("Bluesky error: {0}")]
+    BlueskyError(String),
+
     #[error("I/O error: {0}")]
     IoError(#[from] std::io::Error),
-
-    #[error("{0}")]
-    Other(#[from] anyhow::Error),
 }
 
 impl Error {
