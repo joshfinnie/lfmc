@@ -3,6 +3,42 @@ pub mod period;
 pub use period::Period;
 
 use crate::error::{Error, Result};
+use std::path::PathBuf;
+
+/// Returns the config files consulted for settings, in precedence order
+/// (earliest wins, since `dotenv` never overwrites an already-set variable).
+///
+/// Real environment variables always take precedence over both.
+pub fn config_paths() -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+
+    // Project-local config, for running out of a checkout.
+    paths.push(PathBuf::from(".env"));
+
+    // User-level config.
+    if let Some(home) = dirs::home_dir() {
+        paths.push(home.join(".config/lfmc/.env"));
+    }
+
+    paths
+}
+
+/// Loads every config file that exists, returning the ones actually read.
+pub fn load_config_files() -> Vec<PathBuf> {
+    config_paths()
+        .into_iter()
+        .filter(|path| dotenv::from_filename(path).is_ok())
+        .collect()
+}
+
+/// Human-readable list of the locations searched, for error messages.
+pub fn config_paths_hint() -> String {
+    config_paths()
+        .iter()
+        .map(|p| format!("  {}", p.display()))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
 
 #[derive(Debug, Clone)]
 pub struct Config {

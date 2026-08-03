@@ -7,12 +7,15 @@ use clap::Parser;
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// Your Last.fm API Key
+    ///
+    /// Optional at the parser level so a missing value produces an error that
+    /// names the config files searched, rather than clap's generic message.
     #[arg(short = 'k', long, env = "API_KEY")]
-    pub api_key: String,
+    pub api_key: Option<String>,
 
     /// Your Last.fm Username
     #[arg(short, long, env = "USERNAME")]
-    pub username: String,
+    pub username: Option<String>,
 
     /// The limit of Artists
     #[arg(short, long, default_value = "5", env = "LIMIT")]
@@ -50,8 +53,8 @@ mod tests {
     #[test]
     fn test_cli_parsing() {
         let args = Cli::parse_from(&["lfmc", "--api-key", "test_key", "--username", "test_user"]);
-        assert_eq!(args.api_key, "test_key");
-        assert_eq!(args.username, "test_user");
+        assert_eq!(args.api_key.unwrap(), "test_key");
+        assert_eq!(args.username.unwrap(), "test_user");
         assert_eq!(args.limit, 5); // default
         assert_eq!(args.period.api_string(), "7day"); // default
     }
@@ -62,8 +65,8 @@ mod tests {
             "lfmc", "-k", "key123", "-u", "user123", "-l", "10", "-p", "1month", "-f", "json",
             "-vv",
         ]);
-        assert_eq!(args.api_key, "key123");
-        assert_eq!(args.username, "user123");
+        assert_eq!(args.api_key.unwrap(), "key123");
+        assert_eq!(args.username.unwrap(), "user123");
         assert_eq!(args.limit, 10);
         assert_eq!(args.period.api_string(), "1month");
         assert_eq!(args.verbose, 2);

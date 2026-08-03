@@ -10,6 +10,9 @@ pub enum Error {
     #[error("API request middleware error: {0}")]
     MiddlewareError(#[from] reqwest_middleware::Error),
 
+    #[error("{0}")]
+    ApiResponseError(String),
+
     #[error("Failed to parse API response: {0}")]
     ParseError(String),
 

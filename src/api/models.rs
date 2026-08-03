@@ -18,6 +18,31 @@ pub struct ApiResponse {
     pub top_artists: TopArtists,
 }
 
+/// Last.fm's error envelope, e.g. `{"error": 6, "message": "User not found"}`.
+///
+/// Returned both with 4xx statuses and, for some failures, alongside HTTP 200.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ApiError {
+    pub error: u32,
+    pub message: String,
+}
+
+impl ApiError {
+    /// Adds actionable context to the codes a user of this tool can actually hit.
+    /// See https://www.last.fm/api/errorcodes
+    pub fn hint(&self) -> Option<&'static str> {
+        match self.error {
+            6 => Some("Check the --username value; it must be an existing Last.fm account."),
+            10 | 26 => Some("Check the --api-key value at https://www.last.fm/api/accounts"),
+            17 => {
+                Some("This user's recent listening is private in their Last.fm privacy settings.")
+            }
+            29 => Some("Rate limit exceeded — wait a moment before retrying."),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

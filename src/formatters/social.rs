@@ -10,6 +10,15 @@ impl Formatter for SocialFormatter {
         let period = config.period.display_suffix();
 
         let artist_list = &artists.artists;
+
+        // "My Top 0 played artists: ." reads as a bug rather than an empty week.
+        if artist_list.is_empty() {
+            return Ok(format!(
+                "♫ No artists played in the past{}. Via #LastFM ♫",
+                period
+            ));
+        }
+
         let mut output = format!(
             "♫ My Top {} played artists in the past{}:",
             artist_list.len(),
@@ -195,7 +204,12 @@ mod tests {
         let formatter = SocialFormatter;
         let result = formatter.format(&artists, &config).unwrap();
 
-        assert!(result.contains("My Top 0 played artists"));
+        assert!(
+            result.contains("No artists played in the past week"),
+            "empty result should read as an empty week, got: {}",
+            result
+        );
+        assert!(!result.contains("My Top 0"));
         assert!(result.contains("Via #LastFM ♫"));
     }
 

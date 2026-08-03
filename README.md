@@ -72,7 +72,10 @@ lfmc -k <API_KEY> -u <USERNAME> --format csv
 
 ### Configuration File
 
-Create a `.env` file at `$HOME/.config/lfmc/.env`:
+`lfmc` reads settings from the first of these it finds:
+
+1. `./.env` — project-local, handy when running from a checkout
+2. `$HOME/.config/lfmc/.env` — user-level install
 
 ```sh
 API_KEY=your_lastfm_api_key
@@ -81,6 +84,9 @@ PERIOD=7day
 LIMIT=5
 ```
 
+Real environment variables and CLI flags both override the config files.
+If a required setting is missing, `lfmc` lists the locations it searched.
+
 You can use the provided `.env.sample` as a template:
 
 ```sh
@@ -88,6 +94,10 @@ mkdir -p ~/.config/lfmc
 cp .env.sample ~/.config/lfmc/.env
 # Edit the file with your credentials
 ```
+
+> **Note:** the username is read from the `USERNAME` variable, which some shells
+> and Windows set automatically. If `lfmc` reports an unexpected user, an
+> inherited `USERNAME` is the likely cause — pass `--username` explicitly.
 
 Then run without arguments:
 ```sh
